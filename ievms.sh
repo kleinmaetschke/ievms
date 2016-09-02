@@ -40,23 +40,6 @@ log()  { printf '%s\n' "$*" ; return $? ; }
 # Print an error message to the console and bail out of the script.
 fail() { log "\nERROR: $*\n" ; exit 1 ; }
 
-check_md5() {
-    local md5
-
-    case $kernel in
-        Darwin) md5=`md5 "${1}" | rev | cut -c-32 | rev` ;;
-        Linux) md5=`md5sum "${1}" | cut -c-32` ;;
-    esac
-
-    if [ "${md5}" != "${2}" ]
-    then
-        log "MD5 check failed for ${1} (wanted ${2}, got ${md5})"
-        return 1
-    fi
-
-    log "MD5 check succeeded for ${1}"
-}
-
 # Download a URL to a local file. Accepts a name, URL and file.
 download() { # name url path md5
     local attempt=${5:-"0"}
@@ -67,14 +50,10 @@ download() { # name url path md5
     if [[ -f "${3}" ]]
     then
         log "Found ${1} at ${3} - skipping download"
-        check_md5 "${3}" "${4}" && return 0
-        log "Check failed - redownloading ${1}"
-        rm -f "${3}"
     fi
 
     log "Downloading ${1} from ${2} to ${3} (attempt ${attempt} of ${max})"
     curl ${curl_opts} -L "${2}" -o "${3}" || fail "Failed to download ${2} to ${ievms_home}/${3} using 'curl', error code ($?)"
-    check_md5 "${3}" "${4}" && return 0
 
     if [ "${attempt}" == "${max}" ]
     then
